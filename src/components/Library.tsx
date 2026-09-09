@@ -40,6 +40,23 @@ export default function Library() {
     if (libraryExerciseId) setActiveId(libraryExerciseId);
   }, [libraryExerciseId]);
 
+  const filtered = useMemo(() => {
+    return EXERCISE_CATALOG.filter((ex) => {
+      if (onlyFav && !favorites.includes(ex.id)) return false;
+      if (goal !== "all" && !ex.goals.includes(goal)) return false;
+      if (level !== "all" && ex.level !== level) return false;
+      if (query.trim()) {
+        const q = query.toLowerCase();
+        return (
+          ex.title.toLowerCase().includes(q) ||
+          ex.subtitle.toLowerCase().includes(q) ||
+          ex.description.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [query, goal, level, onlyFav, favorites]);
+
   const close = () => {
     setActiveId(null);
     openLibraryExercise(null);
@@ -59,23 +76,6 @@ export default function Library() {
       return <GuidedPattern exercise={exercise} onBack={close} />;
     }
   }
-
-  const filtered = useMemo(() => {
-    return EXERCISE_CATALOG.filter((ex) => {
-      if (onlyFav && !favorites.includes(ex.id)) return false;
-      if (goal !== "all" && !ex.goals.includes(goal)) return false;
-      if (level !== "all" && ex.level !== level) return false;
-      if (query.trim()) {
-        const q = query.toLowerCase();
-        return (
-          ex.title.toLowerCase().includes(q) ||
-          ex.subtitle.toLowerCase().includes(q) ||
-          ex.description.toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [query, goal, level, onlyFav, favorites]);
 
   return (
     <div

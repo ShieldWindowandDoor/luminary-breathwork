@@ -2,18 +2,46 @@
 
 import { useAppContext } from "@/lib/store";
 import { SettingSlider } from "./ui/controls";
+import AuthPanel from "./AuthPanel";
 
 export default function SettingsPanel() {
   const { settings, updateSettings, setSafetyModalOpen } = useAppContext();
+  const night = settings.theme !== "day";
 
   return (
     <div className="h-full overflow-y-auto p-4 md:p-8" style={{ scrollbarWidth: "none" }}>
       <h2 className="text-3xl font-light mb-2">Settings</h2>
-      <p className="text-slate-400 mb-8">Stored locally on this device.</p>
+      <p className="mb-8">
+        Appearance is saved on this device. Sign in to keep stats in the cloud.
+      </p>
 
       <div className="space-y-6 max-w-lg pb-16">
+        <AuthPanel />
+
         <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
-          <label className="block text-sm text-slate-400">
+          <h3 className="text-xl font-light">Appearance</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => updateSettings({ theme: "night" })}
+              className={`flex-1 py-3 rounded-xl font-bold ${night ? "bg-indigo-600" : "bg-slate-800"}`}
+            >
+              Night
+            </button>
+            <button
+              onClick={() => updateSettings({ theme: "day" })}
+              className={`flex-1 py-3 rounded-xl font-bold ${!night ? "bg-indigo-600" : "bg-slate-800"}`}
+            >
+              Day
+            </button>
+          </div>
+          <p>
+            Night is the default look. Day mode lightens the background. Night
+            mode uses larger, brighter type for contrast.
+          </p>
+        </div>
+
+        <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4">
+          <label className="block">
             Display name
             <input
               value={settings.displayName}
@@ -58,7 +86,7 @@ export default function SettingsPanel() {
 function Toggle({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm">{label}</span>
+      <span>{label}</span>
       <button
         onClick={onToggle}
         className={`w-10 h-5 rounded-full relative ${on ? "bg-indigo-600" : "bg-slate-700"}`}

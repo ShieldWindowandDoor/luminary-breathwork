@@ -35,6 +35,7 @@ import Programs from "@/components/Programs";
 import Learn from "@/components/Learn";
 import SettingsPanel from "@/components/SettingsPanel";
 import ProtocolBuilder from "@/components/ProtocolBuilder";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useState } from "react";
 
 const NAV: { id: Tab; label: string; icon: typeof Home }[] = [
@@ -78,6 +79,9 @@ export default function HomePage() {
           </div>
           <h1 className="text-lg font-semibold tracking-tight">Luminaries</h1>
         </div>
+        <div className="mb-3">
+          <ThemeToggle />
+        </div>
         {NAV.map((item) => (
           <button
             key={item.id}
@@ -109,6 +113,7 @@ export default function HomePage() {
             <h1 className="text-xl font-semibold">Luminaries</h1>
           </div>
           <div className="flex gap-2">
+            <ThemeToggle compact />
             <button
               onClick={() => setSafetyModalOpen(true)}
               className="p-2 bg-slate-800 rounded-lg border border-slate-700"
@@ -144,7 +149,11 @@ export default function HomePage() {
         )}
 
         <main className="flex-1 relative overflow-hidden">
-          <div className="absolute inset-0 max-w-5xl mx-auto w-full h-full p-2 md:p-6">
+          <div
+            className={`absolute inset-0 mx-auto w-full h-full p-2 md:p-6 ${
+              activeTab === "progress" ? "max-w-6xl" : "max-w-5xl"
+            }`}
+          >
             {activeTab === "today" && <Today />}
             {activeTab === "rhythmic" && <RhythmicBreathing />}
             {activeTab === "hold" && <BreathHold />}

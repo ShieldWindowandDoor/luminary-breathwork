@@ -1,1 +1,96 @@
 @import "tailwindcss";
+
+html {
+  color-scheme: dark;
+}
+
+html[data-theme="night"] {
+  font-size: 18px;
+  color-scheme: dark;
+}
+
+html[data-theme="night"] .text-slate-600,
+html[data-theme="night"] .text-slate-500,
+html[data-theme="night"] .text-slate-400 {
+  color: #f8fafc !important;
+}
+
+html[data-theme="night"] .text-slate-300 {
+  color: #ffffff !important;
+}
+
+html[data-theme="night"] .text-indigo-300,
+html[data-theme="night"] .text-indigo-400 {
+  color: #e0e7ff !important;
+}
+
+html[data-theme="night"] .text-indigo-400\/60,
+html[data-theme="night"] .text-indigo-300\/60 {
+  color: #c7d2fe !important;
+}
+
+html[data-theme="night"] .text-\[10px\] {
+  font-size: 0.78rem !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.06em;
+}
+
+html[data-theme="night"] .text-xs {
+  font-size: 0.95rem !important;
+  line-height: 1.45 !important;
+}
+
+html[data-theme="night"] .text-sm {
+  font-size: 1.05rem !important;
+  line-height: 1.5 !important;
+}
+
+html[data-theme="day"] {
+  font-size: 17px;
+  color-scheme: light;
+}
+
+html[data-theme="day"] body,
+html[data-theme="day"] .bg-slate-950 {
+  background-color: #eef2f7 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="day"] .bg-slate-900,
+html[data-theme="day"] .bg-slate-900\/50,
+html[data-theme="day"] .bg-slate-900\/60,
+html[data-theme="day"] .bg-slate-900\/95 {
+  background-color: #ffffff !important;
+}
+
+html[data-theme="day"] .bg-slate-800,
+html[data-theme="day"] .bg-slate-800\/50,
+html[data-theme="day"] .bg-slate-800\/40 {
+  background-color: #e2e8f0 !important;
+}
+
+html[data-theme="day"] .text-slate-100,
+html[data-theme="day"] .text-white,
+html[data-theme="day"] .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html[data-theme="day"] .text-slate-400,
+html[data-theme="day"] .text-slate-300,
+html[data-theme="day"] .text-slate-500 {
+  color: #334155 !important;
+}
+
+html[data-theme="day"] .border-slate-800,
+html[data-theme="day"] .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="day"] .bg-indigo-600 {
+  color: #ffffff !important;
+}
+
+html[data-theme="day"] .text-indigo-400,
+html[data-theme="day"] .text-indigo-300 {
+  color: #3730a3 !important;
+}

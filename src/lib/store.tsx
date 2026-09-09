@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useLocalStorage } from "usehooks-ts";
 import { EXERCISE_CATALOG } from "./catalog";
 import { PROGRAMS } from "./programs";
@@ -86,11 +86,29 @@ export interface AppSettings {
   dailyGoalMinutes: number;
   bells: boolean;
   backgroundSound: boolean;
+  theme: "night" | "day";
 }
 
 export interface ProgramProgress {
   completedDays: number[];
   startedAt: string;
+}
+
+export interface StatsPayload {
+  rhythmicSessions: RhythmicSessionRecord[];
+  holdRecords: HoldRecord[];
+  holdSessions: HoldSessionRecord[];
+  boltScores: TestRecord[];
+  co2Scores: TestRecord[];
+  breathRateScores: BreathRateRecord[];
+  practiceLog: PracticeLogEntry[];
+  journal: JournalEntry[];
+  favorites: string[];
+  customProtocols: CustomProtocol[];
+  programProgress: Record<string, ProgramProgress>;
+  settings: AppSettings;
+  unlockedTrophies: Record<string, string>;
+  weeklyChallengeClaimed: Record<string, boolean>;
 }
 
 interface AppContextType {
@@ -130,14 +148,28 @@ interface AppContextType {
   claimWeeklyChallenge: (key: string) => void;
   isSafetyModalOpen: boolean;
   setSafetyModalOpen: (isOpen: boolean) => void;
+  exportStats: () => StatsPayload;
+  importStats: (payload: StatsPayload) => void;
 }
 
-const storageOptions = { initializeWithValue: false };
+function storageOptions<T>(fallback: T) {
+  return {
+    initializeWithValue: false as const,
+    deserializer: (value: string): T => {
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        return fallback;
+      }
+    },
+  };
+}
 const defaultSettings: AppSettings = {
   displayName: "Luminary",
   dailyGoalMinutes: 10,
   bells: true,
   backgroundSound: true,
+  theme: "night",
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -232,71 +264,80 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [rhythmicSessions, setRhythmicSessions] = useLocalStorage<RhythmicSessionRecord[]>(
     "prana-rhythmic-sessions",
     [],
-    storageOptions
+    storageOptions([] as RhythmicSessionRecord[])
   );
   const [holdRecords, setHoldRecords] = useLocalStorage<HoldRecord[]>(
     "prana-hold-records",
     [],
-    storageOptions
+    storageOptions([] as HoldRecord[])
   );
   const [holdSessions, setHoldSessions] = useLocalStorage<HoldSessionRecord[]>(
     "prana-hold-sessions",
     [],
-    storageOptions
+    storageOptions([] as HoldSessionRecord[])
   );
   const [boltScores, setBoltScores] = useLocalStorage<TestRecord[]>(
     "prana-bolt-scores",
     [],
-    storageOptions
+    storageOptions([] as TestRecord[])
   );
   const [co2Scores, setCo2Scores] = useLocalStorage<TestRecord[]>(
     "prana-co2-scores",
     [],
-    storageOptions
+    storageOptions([] as TestRecord[])
   );
   const [breathRateScores, setBreathRateScores] = useLocalStorage<BreathRateRecord[]>(
     "prana-breath-rate-scores",
     [],
-    storageOptions
+    storageOptions([] as BreathRateRecord[])
   );
   const [practiceLog, setPracticeLog] = useLocalStorage<PracticeLogEntry[]>(
     "prana-practice-log",
     [],
-    storageOptions
+    storageOptions([] as PracticeLogEntry[])
   );
   const [journal, setJournal] = useLocalStorage<JournalEntry[]>(
     "prana-journal",
     [],
-    storageOptions
+    storageOptions([] as JournalEntry[])
   );
   const [favorites, setFavorites] = useLocalStorage<string[]>(
     "prana-favorites",
     [],
-    storageOptions
+    storageOptions([] as string[])
   );
   const [customProtocols, setCustomProtocols] = useLocalStorage<CustomProtocol[]>(
     "prana-custom-protocols",
     [],
-    storageOptions
+    storageOptions([] as CustomProtocol[])
   );
   const [programProgress, setProgramProgress] = useLocalStorage<Record<string, ProgramProgress>>(
     "prana-programs",
     {},
-    storageOptions
+    storageOptions({} as Record<string, ProgramProgress>)
   );
   const [settings, setSettings] = useLocalStorage<AppSettings>(
     "prana-settings",
     defaultSettings,
-    storageOptions
+    {
+      ...storageOptions(defaultSettings),
+      deserializer: (value: string): AppSettings => {
+        try {
+          return { ...defaultSettings, ...(JSON.parse(value) as AppSettings) };
+        } catch {
+          return defaultSettings;
+        }
+      },
+    }
   );
   const [unlockedTrophies, setUnlockedTrophies] = useLocalStorage<Record<string, string>>(
     "prana-trophies",
     {},
-    storageOptions
+    storageOptions({} as Record<string, string>)
   );
   const [weeklyChallengeClaimed, setWeeklyChallengeClaimed] = useLocalStorage<
     Record<string, boolean>
-  >("prana-weekly-claimed", {}, storageOptions);
+  >("prana-weekly-claimed", {}, storageOptions({} as Record<string, boolean>));
   const [isSafetyModalOpen, setSafetyModalOpen] = useState(false);
   const [trophyToast, setTrophyToast] = useState<string | null>(null);
 
@@ -448,6 +489,63 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSettings((prev) => ({ ...prev, ...patch }));
   };
 
+  useEffect(() => {
+    const theme = settings.theme === "day" ? "day" : "night";
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [settings.theme]);
+
+  const exportStats = useCallback(
+    (): StatsPayload => ({
+      rhythmicSessions,
+      holdRecords,
+      holdSessions,
+      boltScores,
+      co2Scores,
+      breathRateScores,
+      practiceLog,
+      journal,
+      favorites,
+      customProtocols,
+      programProgress,
+      settings,
+      unlockedTrophies,
+      weeklyChallengeClaimed,
+    }),
+    [
+      rhythmicSessions,
+      holdRecords,
+      holdSessions,
+      boltScores,
+      co2Scores,
+      breathRateScores,
+      practiceLog,
+      journal,
+      favorites,
+      customProtocols,
+      programProgress,
+      settings,
+      unlockedTrophies,
+      weeklyChallengeClaimed,
+    ]
+  );
+
+  const importStats = useCallback((payload: StatsPayload) => {
+    if (payload.rhythmicSessions) setRhythmicSessions(payload.rhythmicSessions);
+    if (payload.holdRecords) setHoldRecords(payload.holdRecords);
+    if (payload.holdSessions) setHoldSessions(payload.holdSessions);
+    if (payload.boltScores) setBoltScores(payload.boltScores);
+    if (payload.co2Scores) setCo2Scores(payload.co2Scores);
+    if (payload.breathRateScores) setBreathRateScores(payload.breathRateScores);
+    if (payload.practiceLog) setPracticeLog(payload.practiceLog);
+    if (payload.journal) setJournal(payload.journal);
+    if (payload.favorites) setFavorites(payload.favorites);
+    if (payload.customProtocols) setCustomProtocols(payload.customProtocols);
+    if (payload.programProgress) setProgramProgress(payload.programProgress);
+    if (payload.settings) setSettings({ ...defaultSettings, ...payload.settings });
+    if (payload.unlockedTrophies) setUnlockedTrophies(payload.unlockedTrophies);
+    if (payload.weeklyChallengeClaimed) setWeeklyChallengeClaimed(payload.weeklyChallengeClaimed);
+  }, []);
+
   const claimWeeklyChallenge = (key: string) => {
     setWeeklyChallengeClaimed((prev) => ({ ...prev, [key]: true }));
     setTimeout(() => syncTrophies(), 0);
@@ -497,6 +595,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         claimWeeklyChallenge,
         isSafetyModalOpen,
         setSafetyModalOpen,
+        exportStats,
+        importStats,
       }}
     >
       {children}
