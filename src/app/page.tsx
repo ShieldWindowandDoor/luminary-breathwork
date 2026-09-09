@@ -86,10 +86,8 @@ export default function HomePage() {
           <button
             key={item.id}
             onClick={() => go(item.id)}
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium ${
-              activeTab === item.id
-                ? "bg-indigo-600 text-white"
-                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+            className={`nav-pill flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium ${
+              activeTab === item.id ? "nav-pill-active" : ""
             }`}
           >
             <item.icon className="w-4 h-4" />
@@ -135,10 +133,8 @@ export default function HomePage() {
               <button
                 key={item.id}
                 onClick={() => go(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left ${
-                  activeTab === item.id
-                    ? "bg-indigo-600/20 text-indigo-300"
-                    : "text-slate-400"
+                className={`nav-pill w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left ${
+                  activeTab === item.id ? "nav-pill-active" : ""
                 }`}
               >
                 <item.icon className="w-4 h-4" />

@@ -43,26 +43,62 @@ export default function RhythmicBreathing() {
   const [currentPhase, setCurrentPhase] = useState<Phase>('idle');
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
   const [breathsCompleted, setBreathsCompleted] = useState(0);
+  const [savedNote, setSavedNote] = useState("");
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const totalPhaseTime = useRef(0);
-  
+  const elapsedRef = useRef(0);
+  const breathsRef = useRef(0);
+  const savedRef = useRef(false);
+  const addSessionRef = useRef(addRhythmicSession);
+  const settingsRef = useRef({ inhaleTime, topHoldTime, exhaleTime, bottomHoldTime });
+  addSessionRef.current = addRhythmicSession;
+  settingsRef.current = { inhaleTime, topHoldTime, exhaleTime, bottomHoldTime };
+
+  const persistSession = (completed: boolean) => {
+    if (savedRef.current) return;
+    const elapsed = Math.round(elapsedRef.current);
+    if (!completed && elapsed < 8) return;
+    savedRef.current = true;
+    const s = settingsRef.current;
+    addSessionRef.current({
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      durationSeconds: Math.max(elapsed, 1),
+      breaths: breathsRef.current,
+      inhale: s.inhaleTime,
+      topHold: s.topHoldTime,
+      exhale: s.exhaleTime,
+      bottomHold: s.bottomHoldTime,
+    });
+    const seconds = Math.max(elapsed, 1);
+    setSavedNote(
+      seconds >= 60
+        ? `Logged ${Math.floor(seconds / 60)}m ${seconds % 60}s · ${breathsRef.current} breaths`
+        : `Logged ${seconds}s · ${breathsRef.current} breaths`
+    );
+  };
+
   useEffect(() => {
     if (!isActive) {
       if (timerRef.current) clearInterval(timerRef.current);
-      setSessionTimeLeft(limitMode === 'time' ? sessionLengthMin * 60 : 0);
+      setSessionTimeLeft(limitMode === "time" ? sessionLengthMin * 60 : 0);
       setBreathsCompleted(0);
-      setCurrentPhase('idle');
+      setCurrentPhase("idle");
       audio.stopBackgroundLayer();
       return;
     }
 
+    savedRef.current = false;
+    elapsedRef.current = 0;
+    breathsRef.current = 0;
+    setSavedNote("");
     audio.init();
     if (bgSoundEnabled) audio.startBackgroundLayer();
 
-    let currentPhaseLocal: Phase = 'inhale';
+    let currentPhaseLocal: Phase = "inhale";
     let phaseTimeRemainingLocal = inhaleTime;
-    let sessionTimeRemainingLocal = limitMode === 'time' ? sessionLengthMin * 60 : 0;
+    let sessionTimeRemainingLocal = limitMode === "time" ? sessionLengthMin * 60 : 0;
     let breathsDoneLocal = 0;
 
     setCurrentPhase(currentPhaseLocal);
@@ -71,79 +107,82 @@ export default function RhythmicBreathing() {
     setBreathsCompleted(0);
     totalPhaseTime.current = phaseTimeRemainingLocal;
 
+    const finish = (completed: boolean) => {
+      persistSession(completed);
+      setIsActive(false);
+    };
+
     const startPhase = (nextPhase: Phase) => {
       currentPhaseLocal = nextPhase;
       let time = 0;
-      if (nextPhase === 'inhale') {
+      if (nextPhase === "inhale") {
         time = inhaleTime;
-        if (soundEnabled && time > 0) audio.playDing(659.25); // E5
-      } else if (nextPhase === 'topHold') {
+        if (soundEnabled && time > 0) audio.playDing(659.25);
+      } else if (nextPhase === "topHold") {
         time = topHoldTime;
-        if (soundEnabled && time > 0) audio.playDing(880); // A5 (Top Ding)
-      } else if (nextPhase === 'exhale') {
+        if (soundEnabled && time > 0) audio.playDing(880);
+      } else if (nextPhase === "exhale") {
         time = exhaleTime;
-        if (soundEnabled && time > 0) audio.playDing(440); // A4 (Bottom Ding)
-      } else if (nextPhase === 'bottomHold') {
+        if (soundEnabled && time > 0) audio.playDing(440);
+      } else if (nextPhase === "bottomHold") {
         time = bottomHoldTime;
-        if (soundEnabled && time > 0) audio.playDing(329.63); // E4
+        if (soundEnabled && time > 0) audio.playDing(329.63);
       }
-      
+
       if (time === 0) {
-         if (nextPhase === 'inhale') startPhase('topHold');
-         else if (nextPhase === 'topHold') startPhase('exhale');
-         else if (nextPhase === 'exhale') startPhase('bottomHold');
-         else if (nextPhase === 'bottomHold') {
-             breathsDoneLocal++;
-             setBreathsCompleted(breathsDoneLocal);
-             startPhase('inhale');
-         }
-         return;
+        if (nextPhase === "inhale") startPhase("topHold");
+        else if (nextPhase === "topHold") startPhase("exhale");
+        else if (nextPhase === "exhale") startPhase("bottomHold");
+        else if (nextPhase === "bottomHold") {
+          breathsDoneLocal++;
+          breathsRef.current = breathsDoneLocal;
+          setBreathsCompleted(breathsDoneLocal);
+          startPhase("inhale");
+        }
+        return;
       }
-      
+
       setCurrentPhase(currentPhaseLocal);
       phaseTimeRemainingLocal = time;
       setPhaseTimeLeft(time);
       totalPhaseTime.current = time;
     };
 
-    startPhase('inhale');
+    startPhase("inhale");
 
     timerRef.current = setInterval(() => {
-      const step = 0.1; // 100ms
+      const step = 0.1;
+      elapsedRef.current += step;
 
-      // Update session tracking
-      if (limitMode === 'time') {
-          sessionTimeRemainingLocal -= step;
-          setSessionTimeLeft(Math.max(0, sessionTimeRemainingLocal));
-          if (sessionTimeRemainingLocal <= 0) {
-             endSession(true);
-             return;
-          }
+      if (limitMode === "time") {
+        sessionTimeRemainingLocal -= step;
+        setSessionTimeLeft(Math.max(0, sessionTimeRemainingLocal));
+        if (sessionTimeRemainingLocal <= 0) {
+          finish(true);
+          return;
+        }
       } else {
-          sessionTimeRemainingLocal += step; // Just track elapsed time for stats
-          setSessionTimeLeft(sessionTimeRemainingLocal);
+        sessionTimeRemainingLocal += step;
+        setSessionTimeLeft(sessionTimeRemainingLocal);
       }
 
-      // Update phase tracking
       phaseTimeRemainingLocal -= step;
       setPhaseTimeLeft(Math.max(0, phaseTimeRemainingLocal));
 
-      if (phaseTimeRemainingLocal <= 0.05) { // tolerance for fp errors
-         if (currentPhaseLocal === 'inhale') {
-             startPhase('topHold');
-         } else if (currentPhaseLocal === 'topHold') {
-             startPhase('exhale');
-         } else if (currentPhaseLocal === 'exhale') {
-             startPhase('bottomHold');
-         } else if (currentPhaseLocal === 'bottomHold') {
-             breathsDoneLocal++;
-             setBreathsCompleted(breathsDoneLocal);
-             if (limitMode === 'breaths' && breathsDoneLocal >= sessionLengthBreaths) {
-                 endSession(true);
-                 return;
-             }
-             startPhase('inhale');
-         }
+      if (phaseTimeRemainingLocal <= 0.05) {
+        if (currentPhaseLocal === "inhale") startPhase("topHold");
+        else if (currentPhaseLocal === "topHold") startPhase("exhale");
+        else if (currentPhaseLocal === "exhale") startPhase("bottomHold");
+        else if (currentPhaseLocal === "bottomHold") {
+          breathsDoneLocal++;
+          breathsRef.current = breathsDoneLocal;
+          setBreathsCompleted(breathsDoneLocal);
+          if (limitMode === "breaths" && breathsDoneLocal >= sessionLengthBreaths) {
+            finish(true);
+            return;
+          }
+          startPhase("inhale");
+        }
       }
     }, 100);
 
@@ -151,26 +190,11 @@ export default function RhythmicBreathing() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isActive, limitMode, sessionLengthMin, sessionLengthBreaths]);
-  
+
   const endSession = (completed: boolean) => {
-     setIsActive(false);
-     audio.stopBackgroundLayer();
-     
-     // Calculate elapsed time based on mode
-     let elapsed = 0;
-     setSessionTimeLeft(prev => {
-        if (limitMode === 'time') elapsed = (sessionLengthMin * 60) - prev;
-        else elapsed = prev; // in breaths mode, it counts up
-        return prev;
-     });
-     
-     if (completed || elapsed > 10) {
-        addRhythmicSession({
-          id: Date.now().toString(),
-          date: new Date().toISOString(),
-          durationSeconds: Math.round(elapsed)
-        });
-     }
+    persistSession(completed);
+    setIsActive(false);
+    audio.stopBackgroundLayer();
   };
 
   const formatTime = (seconds: number) => {
@@ -357,12 +381,17 @@ export default function RhythmicBreathing() {
          {/* Controls */}
          <div className="flex justify-center z-10 w-full px-4 md:px-0 mt-auto mb-4 md:mb-0">
             {!isActive ? (
+               <div className="w-full md:w-auto flex flex-col items-center gap-3">
+                 {savedNote && (
+                   <p className="text-sm font-medium text-emerald-400">{savedNote}</p>
+                 )}
                <button 
                   onClick={() => setIsActive(true)}
                   className="w-full md:w-auto px-10 py-5 rounded-full bg-indigo-600 font-bold hover:bg-indigo-500 shadow-xl shadow-indigo-500/20 tracking-wider flex items-center justify-center gap-2 transition-transform active:scale-95"
                >
                   <Play className="w-5 h-5 fill-current" /> START SESSION
                </button>
+               </div>
             ) : (
                <button 
                   onClick={() => endSession(false)}

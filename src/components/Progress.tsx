@@ -114,7 +114,39 @@ export default function Progress() {
           </div>
         </section>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <section className="rounded-[2rem] border border-indigo-400/30 bg-gradient-to-br from-indigo-600/20 via-slate-900 to-violet-600/10 p-5 md:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Wind className="w-4 h-4 text-indigo-300" />
+            <h3 className="text-xs font-bold uppercase tracking-widest text-indigo-200">
+              Rhythm tracking
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <RhythmStat label="Sessions" value={`${insights.rhythmCount}`} />
+            <RhythmStat label="Lifetime" value={insights.rhythmSeconds ? formatDuration(insights.rhythmSeconds) : "—"} />
+            <RhythmStat label="Today" value={insights.rhythmToday ? formatDuration(insights.rhythmToday) : "—"} />
+            <RhythmStat label="This week" value={insights.rhythmWeek ? formatDuration(insights.rhythmWeek) : "—"} />
+            <RhythmStat label="Breaths" value={insights.rhythmBreaths ? `${insights.rhythmBreaths}` : "—"} />
+            <RhythmStat
+              label="Share of practice"
+              value={
+                insights.totalPracticeSeconds
+                  ? `${Math.round((insights.rhythmSeconds / insights.totalPracticeSeconds) * 100)}%`
+                  : "—"
+              }
+            />
+          </div>
+        </section>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SparkCard
+            title="Rhythm minutes"
+            icon={<Wind className="w-4 h-4 text-indigo-300" />}
+            series={insights.rhythmSpark}
+            format={(v) => `${v.toFixed(1)}m`}
+            empty="Finish a Rhythm session to draw this curve"
+            color="#818cf8"
+          />
           <SparkCard
             title="Hold progression"
             icon={<Timer className="w-4 h-4 text-indigo-300" />}
@@ -225,6 +257,15 @@ export default function Progress() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RhythmStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-slate-950/50 border border-indigo-400/20 px-3 py-3">
+      <p className="text-[10px] uppercase tracking-widest text-indigo-200 font-bold">{label}</p>
+      <p className="text-xl font-light mt-1">{value}</p>
     </div>
   );
 }

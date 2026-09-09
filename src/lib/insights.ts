@@ -259,7 +259,38 @@ export function buildInsights(data: StatsPayload, extra: { level: number; xp: nu
     .reduce((a, s) => a + s.durationSeconds, 0);
   const goalPct = Math.min(100, Math.round((todaySeconds / (goalMinutes * 60)) * 100));
 
+  const rhythmList = [...data.rhythmicSessions].sort(
+    (a, b) => +new Date(a.date) - +new Date(b.date)
+  );
+  const rhythmSeconds = rhythmList.reduce((a, s) => a + s.durationSeconds, 0);
+  const rhythmBreaths = rhythmList.reduce((a, s) => a + (s.breaths || 0), 0);
+  const rhythmToday = rhythmList
+    .filter((s) => localDay(s.date) === today)
+    .reduce((a, s) => a + s.durationSeconds, 0);
+  const rhythmWeek = rhythmList
+    .filter((s) => last7.some((d) => d.day === localDay(s.date)))
+    .reduce((a, s) => a + s.durationSeconds, 0);
+  const longestRhythmBreaths = maxOf(rhythmList.map((s) => s.breaths || 0));
+  const avgRhythm = rhythmList.length ? rhythmSeconds / rhythmList.length : 0;
+  const cycleKey = (s: (typeof rhythmList)[0]) =>
+    s.inhale != null ? `${s.inhale}-${s.topHold ?? 0}-${s.exhale ?? 0}-${s.bottomHold ?? 0}` : "";
+  const cycleCounts = new Map<string, number>();
+  for (const s of rhythmList) {
+    const key = cycleKey(s);
+    if (!key) continue;
+    cycleCounts.set(key, (cycleCounts.get(key) || 0) + 1);
+  }
+  const favoriteCycle = [...cycleCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+
   const records = [
+    { id: "rhythm-n", label: "Rhythm sessions", value: rhythmList.length ? `${rhythmList.length}` : "—", hint: "Rhythm tab completions" },
+    { id: "rhythm-time", label: "Rhythm lifetime", value: rhythmSeconds ? formatDuration(rhythmSeconds) : "—", hint: "All guided rhythm minutes" },
+    { id: "rhythm-today", label: "Rhythm today", value: rhythmToday ? formatDuration(rhythmToday) : "—", hint: "Logged on this local day" },
+    { id: "rhythm-week", label: "Rhythm this week", value: rhythmWeek ? formatDuration(rhythmWeek) : "—", hint: "Last 7 local days" },
+    { id: "rhythm-avg", label: "Avg rhythm session", value: rhythmList.length ? formatDuration(avgRhythm) : "—", hint: "Mean length" },
+    { id: "rhythm-breaths", label: "Breaths completed", value: rhythmBreaths ? `${rhythmBreaths}` : "—", hint: "Full cycles logged in Rhythm" },
+    { id: "rhythm-breaths-best", label: "Most breaths in a set", value: longestRhythmBreaths ? `${longestRhythmBreaths}` : "—", hint: "Single Rhythm session" },
+    { id: "rhythm-cycle", label: "Favorite cycle", value: favoriteCycle ? favoriteCycle[0].replace(/-/g, " / ") : "—", hint: favoriteCycle ? `${favoriteCycle[1]} sessions` : "Inhale / hold / exhale / hold" },
     { id: "hold-max", label: "Max breath hold", value: bestHold ? formatClock(bestHold) : "—", hint: "Single longest apnea" },
     { id: "hold-avg5", label: "Last 5 holds avg", value: recentHolds.length ? formatClock(avg(recentHolds)) : "—", hint: "Recent form, not a one-off" },
     { id: "hold-avg", label: "Lifetime hold avg", value: holdValues.length ? formatClock(avgHold) : "—", hint: `${holdValues.length} holds logged` },
@@ -310,6 +341,12 @@ export function buildInsights(data: StatsPayload, extra: { level: number; xp: nu
     totalPracticeSeconds,
     sessionCount,
     records,
+    rhythmSeconds,
+    rhythmCount: rhythmList.length,
+    rhythmBreaths,
+    rhythmToday,
+    rhythmWeek,
+    rhythmSpark: rhythmList.map((s) => ({ t: s.date, v: s.durationSeconds / 60 })),
     holdSpark: holdSorted.map((h) => ({ t: h.date, v: h.durationSeconds })),
     boltSpark: boltSorted.map((h) => ({ t: h.date, v: h.durationSeconds })),
     co2Spark: co2Sorted.map((h) => ({ t: h.date, v: h.durationSeconds })),

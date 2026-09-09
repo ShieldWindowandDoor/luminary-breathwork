@@ -27,6 +27,11 @@ export interface RhythmicSessionRecord {
   id: string;
   date: string;
   durationSeconds: number;
+  breaths?: number;
+  inhale?: number;
+  topHold?: number;
+  exhale?: number;
+  bottomHold?: number;
 }
 
 export interface HoldRecord {
@@ -148,6 +153,8 @@ interface AppContextType {
   claimWeeklyChallenge: (key: string) => void;
   isSafetyModalOpen: boolean;
   setSafetyModalOpen: (isOpen: boolean) => void;
+  holdGoal: number;
+  openHoldSession: (targetHolds?: number) => void;
   exportStats: () => StatsPayload;
   importStats: (payload: StatsPayload) => void;
 }
@@ -340,6 +347,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   >("prana-weekly-claimed", {}, storageOptions({} as Record<string, boolean>));
   const [isSafetyModalOpen, setSafetyModalOpen] = useState(false);
   const [trophyToast, setTrophyToast] = useState<string | null>(null);
+  const [holdGoal, setHoldGoal] = useState(0);
 
   const snapshot = useMemo(
     () => ({
@@ -556,6 +564,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (id) setActiveTab("library");
   };
 
+  const openHoldSession = (targetHolds = 0) => {
+    setHoldGoal(targetHolds);
+    setActiveTab("hold");
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -595,6 +608,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         claimWeeklyChallenge,
         isSafetyModalOpen,
         setSafetyModalOpen,
+        holdGoal,
+        openHoldSession,
         exportStats,
         importStats,
       }}
